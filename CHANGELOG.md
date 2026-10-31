@@ -4,7 +4,42 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-11-01
+
+### Added
+
+- `with_current(|handle, conn_id| ...)`: the scoped path used to clone the
+  `Arc` and downcast it for every record. It now borrows the handle, and
+  `current` and `try_emit` are built on it.
+- `RetentionAnchor` and `FileStoreConfig::retention_anchor`: the window can
+  start at the clock or at the newest segment already in the directory.
+- `FileStoreConfig::on_warning` and `WarningSink`: the store reports a clock
+  that disagrees with the archive as a ready-made line; the application keeps
+  its own wording.
+- `today`, `day_name`, `day_of_name`, `segment_day`, `SEGMENT_SUFFIX`:
+  the day calendar and the segment naming are public, so a consumer no longer
+  carries a second copy of the arithmetic.
+
+### Changed
+
+- A day the current run wrote is never deleted by retention, whatever the
+  window or the clock says: a router that boots reading 1970 would otherwise
+  delete the segment that boot had just written.
+- `format_utc` prints microseconds, the precision every consumer shows.
+- `decode_batch` returns the records instead of a `DecodedBatch` with a
+  copied payload; `SegmentReader::next_decoded_batch` keeps the wrapper.
+- `init(settings, sink)` and `init_with(settings, observer, sink)` no longer
+  take a render function.
+
+### Removed
+
+- The text projection and the ring buffer, with the `text` and `ring`
+  features: `Render`, `TextSettings`, `TextTarget`, `RingSettings`,
+  `Settings::text`, `Settings::ring`, `Handle::dump_ring` and
+  `Handle::ring_dropped`. An application renders a record and keeps its own
+  bounded buffer in its [`Observer`], which is the same seam with the
+  application's own rules.
+- `ShutdownReport::text_errors` and `ShutdownReport::ring_dropped`.
 
 ## [0.2.0] - 2026-10-31
 
