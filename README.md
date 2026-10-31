@@ -20,36 +20,43 @@ binary segment format that other programs can read without your codec.
 ## Example
 
 ```rust,no_run
-use logreel::{Event, Level, Settings, init};
+use std::error::Error;
 
-#[derive(Event)]
-#[event(kind = 0, codec = "prost")]
-struct SessionClosed {
-    #[prost(uint64, tag = "1")]
-    bytes_out: u64,
-}
+use logreel::file::{FileStore, FileStoreConfig};
+use logreel::{DecodeError, Event, Level, Settings, init};
 
-impl logreel::Render for SessionClosed {
-    fn render(&self, out: &mut String) {
-        use std::fmt::Write as _;
-        let _ = write!(out, "session closed, bytes_out={}", self.bytes_out);
+#[derive(Clone, Copy)]
+struct Ping(u64);
+
+impl Event for Ping {
+    const KINDS: u16 = 1;
+    fn kind(&self) -> u16 { 0 }
+    fn encode(&self, out: &mut Vec<u8>) {
+        out.extend_from_slice(&self.0.to_le_bytes());
+    }
+    fn decode(_kind: u16, bytes: &[u8]) -> Result<Self, DecodeError> {
+        let value = u64::from_le_bytes(bytes.try_into().map_err(|_| {
+            DecodeError::new(0, "ping expects 8 bytes")
+        })?);
+        Ok(Self(value))
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let settings = Settings::builder()
-        .min_level(Level::Info)
-        .domain(b"dc=1")
-        .build();
-    let logger = init::<SessionClosed>(settings, None, Box::new(logreel::file::FileStore::open("./logs")?))?;
-    let handle = logger.handle();
-    handle.emit(Level::Info, 0, 0, 7, SessionClosed { bytes_out: 1024 });
-    logger.shutdown();
+fn main() -> Result<(), Box<dyn Error>> {
+    let settings = Settings::builder().min_level(Level::Info).build();
+    let store = FileStore::open(FileStoreConfig::new("./logs"))?;
+    let logger = init::<Ping>(settings, None, Box::new(store))?;
+    logger.handle().emit(Level::Info, 0, 42, Ping(1024));
+    let report = logger.shutdown();
+    println!("wrote {} records", report.records);
     Ok(())
 }
 ```
 
-The full working example is in [`examples/quickstart`](examples/quickstart).
+Enable the backend with `logreel = { version = "0.1", features = ["file"] }`.
+The full working example, including text projection and probing, is in
+[`examples/quickstart`](examples/quickstart).
+
 The byte layout is specified in [`docs/SPEC.md`](docs/SPEC.md); a reader in
 another language can follow [`docs/FORMAT.md`](docs/FORMAT.md).
 
@@ -74,6 +81,13 @@ another language can follow [`docs/FORMAT.md`](docs/FORMAT.md).
 
 Text is off by default so a published dependency does not pull a formatting
 stack into a binary that only needs records.
+
+## Measurements
+
+`bench/RESULTS.md` records absolute numbers for emit, encode, write, scan,
+probe, binary size and RSS on the development machine. `bench/BUDGET.md`
+freezes the first run with a ten percent tolerance; `cargo run -p logreel-bench
+--release -- --check` enforces it.
 
 ## Status
 

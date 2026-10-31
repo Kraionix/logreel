@@ -24,7 +24,10 @@ fn run() -> Result<(), String> {
             _ => Err("usage: cargo xtask fixtures gen|check".to_owned()),
         },
         Some("ci") => ci(),
-        Some("bench") => bench(),
+        Some("bench") => {
+            let rest: Vec<String> = args.collect();
+            bench(&rest)
+        }
         Some("version") => {
             println!("logreel {}", env!("CARGO_PKG_VERSION"));
             Ok(())
@@ -81,6 +84,20 @@ fn ci() -> Result<(), String> {
     fixtures::check()
 }
 
-fn bench() -> Result<(), String> {
-    Err("bench: not implemented yet (M5)".to_owned())
+fn bench(args: &[String]) -> Result<(), String> {
+    println!(
+        "xtask: cargo run --release -p logreel-bench -- {}",
+        args.join(" ")
+    );
+    let status = Command::new("cargo")
+        .args(["run", "--release", "-p", "logreel-bench", "--"])
+        .args(args)
+        .current_dir(workspace_root())
+        .status()
+        .map_err(|error| format!("cargo run: {error}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("bench: {status}"))
+    }
 }
