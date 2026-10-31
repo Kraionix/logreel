@@ -201,6 +201,8 @@ pub enum InitError {
     ZeroFlushInterval,
     /// Text or ring is enabled without a render function.
     MissingRender,
+    /// Text projection is configured but the text feature is off.
+    TextDisabled,
     /// The writer thread could not be spawned.
     Spawn(String),
 }
@@ -214,6 +216,8 @@ impl fmt::Display for InitError {
             Self::MissingRender => {
                 formatter.write_str("text or ring is enabled without a render function")
             }
+            Self::TextDisabled => formatter
+                .write_str("text projection is configured but the logreel text feature is off"),
             Self::Spawn(message) => write!(formatter, "writer thread: {message}"),
         }
     }
@@ -242,6 +246,9 @@ pub fn init<E: Event + Send + 'static>(
     }
     if (settings.text.is_some() || settings.ring.is_some()) && render.is_none() {
         return Err(InitError::MissingRender);
+    }
+    if !cfg!(feature = "text") && settings.text.is_some() {
+        return Err(InitError::TextDisabled);
     }
 
     let filters = Arc::new(Filters::new(settings.min_level));

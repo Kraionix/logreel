@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [features]
-default = []
+default = ["text", "file"]
 text = ["logreel/text"]
 file = ["logreel/file"]
 ring = ["logreel/ring"]

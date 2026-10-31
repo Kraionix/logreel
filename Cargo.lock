@@ -109,6 +109,8 @@ name = "logreel-bench"
 version = "0.1.0"
 dependencies = [
  "logreel",
+ "logreel-example-events",
+ "tokio",
 ]
 
 [[package]]

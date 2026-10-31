@@ -29,6 +29,7 @@ logreel-store = { path = "crates/logreel-store", version = "=0.1.0" }
 logreel-file = { path = "crates/logreel-file", version = "=0.1.0" }
 logreel-store-redb = { path = "crates/logreel-store-redb", version = "=0.1.0" }
 logreel = { path = "crates/logreel", version = "=0.1.0" }
+logreel-example-events = { path = "examples/events", version = "=0.1.0" }
 
 tokio = { version = "1.53", default-features = false, features = ["rt"] }
 prost = "0.14.4"
