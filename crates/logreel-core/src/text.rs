@@ -90,10 +90,7 @@ mod tests {
         );
         let mut out = String::new();
         format_record(&record, render, &mut out);
-        assert_eq!(
-            out,
-            "2023-11-14T22:13:20.123456789Z WARN  [conn=42] disk full"
-        );
+        assert_eq!(out, "2023-11-14T22:13:20.123456Z WARN  [conn=42] disk full");
     }
 
     #[test]
@@ -101,6 +98,6 @@ mod tests {
         let record = Record::new(Level::Info, 0, 7, 0, 1, 0, Body("started"));
         let mut out = String::new();
         format_record(&record, render, &mut out);
-        assert_eq!(out, "1970-01-01T00:00:00.000000000Z INFO  started");
+        assert_eq!(out, "1970-01-01T00:00:00.000000Z INFO  started");
     }
 }
