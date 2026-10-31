@@ -1,7 +1,7 @@
 # Release checklist
 
-Version: 0.1.0 (single workspace version).
-Tag: annotated `v0.1.0`.
+Version: 0.3.0 (single workspace version).
+Tag: annotated `v0.3.0`.
 
 ## Order
 
@@ -47,6 +47,6 @@ that does not need the registry.
 ## Tag
 
 ```bash
-git tag -a v0.1.0 -m "logreel 0.1.0"
+git tag -a v0.3.0 -m "logreel 0.3.0"
 git push origin main --tags
 ```
