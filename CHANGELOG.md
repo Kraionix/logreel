@@ -30,6 +30,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   been quiet for `quiet` or `limit` has passed, then flush the tail. `shutdown`
   is the same with both zero.
 - `FileStoreConfig::zstd_level` (default 3) for builds with `zstd`.
+- `FileStore::prime`: create or validate today's file and take its lock
+  without writing a frame, so a second writer fails at startup rather than at
+  the first append.
+- `SegmentReader::next_decoded_batch`, `DecodedBatch` and `OwnedRecord`: a
+  batch with its records decoded and their payloads copied out, for readers
+  that print records and their enclosing batch together.
 - Refusal to append compressed frames to a file whose header says it carries
   none: the reader would have no reason to expect them.
 
