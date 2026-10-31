@@ -45,6 +45,10 @@ pub struct FileStoreConfig {
     pub max_total_bytes: u64,
     /// Compress every frame with zstd; requires the zstd feature.
     pub compress: bool,
+    /// zstd compression level used when [FileStoreConfig::compress] is set.
+    /// The default, 3, is zstd's own; an application on a slow CPU passes 1
+    /// and pays for fewer bytes rather than fewer instructions.
+    pub zstd_level: i32,
 }
 
 impl FileStoreConfig {
@@ -59,6 +63,7 @@ impl FileStoreConfig {
             keep_days: 7,
             max_total_bytes: 256 * 1024 * 1024,
             compress: false,
+            zstd_level: 3,
         }
     }
 }
@@ -153,6 +158,12 @@ impl FileStore {
                 "compression requested but the zstd feature is off",
             ));
         }
+        if !(1..=22).contains(&config.zstd_level) {
+            return Err(StoreError::new(
+                ErrorKind::Refused,
+                format!("zstd level {} is outside 1..=22", config.zstd_level),
+            ));
+        }
         Ok(Self {
             config,
             clock,
@@ -217,6 +228,15 @@ impl FileStore {
                     ),
                 ));
             }
+            if self.config.compress && !header.contains_zstd() {
+                return Err(StoreError::new(
+                    ErrorKind::Refused,
+                    format!(
+                        "{}: file was created without compression and cannot take compressed frames",
+                        path.display()
+                    ),
+                ));
+            }
             if header.schema_hash != batch.schema_hash {
                 return Err(StoreError::new(
                     ErrorKind::Refused,
@@ -263,7 +283,7 @@ impl FileStore {
         #[cfg(feature = "zstd")]
         let body: Option<Vec<u8>> = if compress {
             Some(
-                zstd::bulk::compress(payload, 3)
+                zstd::bulk::compress(payload, self.config.zstd_level)
                     .map_err(|error| StoreError::new(ErrorKind::Io, error.to_string()))?,
             )
         } else {

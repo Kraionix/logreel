@@ -51,8 +51,15 @@ pub enum InternalErrorKind {
 /// Info floor, 4096 channel slots, 256 records per batch, one second flush,
 /// no text, no ring, eventual durability.
 pub struct Settings {
-    /// Minimum level for every category.
+    /// Minimum level for every category: the producer gate.
     pub min_level: Level,
+    /// Minimum level the sink keeps, for every category.
+    ///
+    /// The producer gate is the union of every consumer; this is the second
+    /// table, consulted on the writer thread, that decides what actually
+    /// reaches the sink. [Settings::min_level] is the default, and
+    /// [SettingsBuilder::sink_min_level] separates the two.
+    pub sink_min_level: Level,
     /// Bounded channel capacity in records.
     pub channel_capacity: usize,
     /// Maximum records per batch.
@@ -70,6 +77,7 @@ pub struct Settings {
     /// Ring buffer, when enabled.
     pub ring: Option<RingSettings>,
     pub(crate) filter_overrides: Vec<(u8, Option<Level>)>,
+    pub(crate) sink_filter_overrides: Vec<(u8, Option<Level>)>,
     pub(crate) on_internal: Option<Arc<dyn Fn(InternalError) + Send + Sync>>,
 }
 
@@ -77,6 +85,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             min_level: Level::Info,
+            sink_min_level: Level::Info,
             channel_capacity: 4096,
             batch_max: 256,
             flush_interval: Duration::from_secs(1),
@@ -86,6 +95,7 @@ impl Default for Settings {
             text: None,
             ring: None,
             filter_overrides: Vec::new(),
+            sink_filter_overrides: Vec::new(),
             on_internal: None,
         }
     }
@@ -96,6 +106,7 @@ impl fmt::Debug for Settings {
         formatter
             .debug_struct("Settings")
             .field("min_level", &self.min_level)
+            .field("sink_min_level", &self.sink_min_level)
             .field("channel_capacity", &self.channel_capacity)
             .field("batch_max", &self.batch_max)
             .field("flush_interval", &self.flush_interval)
@@ -105,6 +116,7 @@ impl fmt::Debug for Settings {
             .field("text", &self.text)
             .field("ring", &self.ring)
             .field("filter_overrides", &self.filter_overrides)
+            .field("sink_filter_overrides", &self.sink_filter_overrides)
             .field("on_internal", &self.on_internal.is_some())
             .finish()
     }
@@ -116,6 +128,7 @@ impl Settings {
     pub fn builder() -> SettingsBuilder {
         SettingsBuilder {
             settings: Self::default(),
+            sink_floor_explicit: false,
         }
     }
 }
@@ -124,13 +137,38 @@ impl Settings {
 #[derive(Debug)]
 pub struct SettingsBuilder {
     settings: Settings,
+    /// True once [SettingsBuilder::sink_min_level] was called, so
+    /// [SettingsBuilder::min_level] stops moving the sink floor with the gate.
+    sink_floor_explicit: bool,
 }
 
 impl SettingsBuilder {
     /// Global floor.
+    ///
+    /// Until [SettingsBuilder::sink_min_level] is called this moves the sink
+    /// floor too, because "log at debug" means the segment as well as the
+    /// gate.
     #[must_use]
     pub fn min_level(mut self, level: Level) -> Self {
         self.settings.min_level = level;
+        if !self.sink_floor_explicit {
+            self.settings.sink_min_level = level;
+        }
+        self
+    }
+
+    /// Sink floor, independent of the producer gate.
+    #[must_use]
+    pub fn sink_min_level(mut self, level: Level) -> Self {
+        self.settings.sink_min_level = level;
+        self.sink_floor_explicit = true;
+        self
+    }
+
+    /// Override the sink floor for one category, or disable that category.
+    #[must_use]
+    pub fn sink_filter(mut self, category: u8, level: Option<Level>) -> Self {
+        self.settings.sink_filter_overrides.push((category, level));
         self
     }
 
@@ -222,6 +260,7 @@ mod tests {
     fn defaults_are_stable() {
         let settings = Settings::default();
         assert_eq!(settings.min_level, Level::Info);
+        assert_eq!(settings.sink_min_level, Level::Info);
         assert_eq!(settings.channel_capacity, 4096);
         assert_eq!(settings.batch_max, 256);
         assert_eq!(settings.flush_interval, Duration::from_secs(1));
@@ -234,6 +273,8 @@ mod tests {
     fn builder_roundtrip() {
         let settings = Settings::builder()
             .min_level(Level::Debug)
+            .sink_min_level(Level::Warn)
+            .sink_filter(4, None)
             .channel_capacity(8)
             .batch_max(4)
             .flush_interval(Duration::from_millis(10))
@@ -245,6 +286,8 @@ mod tests {
             .filter(3, None)
             .build();
         assert_eq!(settings.min_level, Level::Debug);
+        assert_eq!(settings.sink_min_level, Level::Warn);
+        assert_eq!(settings.sink_filter_overrides, vec![(4, None)]);
         assert_eq!(settings.channel_capacity, 8);
         assert_eq!(settings.batch_max, 4);
         assert!(!settings.flush_on_warn);

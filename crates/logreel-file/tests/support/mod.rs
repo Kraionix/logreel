@@ -174,6 +174,7 @@ pub(crate) fn store(
         keep_days,
         max_total_bytes,
         compress,
+        zstd_level: 3,
     };
     FileStore::with_clock(config, clock).expect("open store")
 }

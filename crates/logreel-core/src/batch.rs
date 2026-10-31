@@ -31,7 +31,23 @@ impl BatchEncoder {
     /// Returns an empty batch (zero records) when the input is empty. The
     /// caller is expected to skip the sink in that case.
     pub fn encode<E: Event>(&mut self, records: &[Record<E>], domain: &[u8]) -> EncodedBatch {
-        if records.is_empty() {
+        self.encode_where(records, domain, |_| true)
+    }
+
+    /// Encode only the records the predicate accepts.
+    ///
+    /// The writer's sink table is a second filter, applied after the producer
+    /// gate: a record the sink does not want must not reach the payload, but
+    /// the text view and the observer have already seen it. Filtering here
+    /// rather than into a second vector keeps one copy of every record.
+    pub fn encode_where<E: Event>(
+        &mut self,
+        records: &[Record<E>],
+        domain: &[u8],
+        keep: impl Fn(&Record<E>) -> bool,
+    ) -> EncodedBatch {
+        let retained = records.iter().filter(|record| keep(record)).count();
+        if retained == 0 {
             return EncodedBatch::new(
                 E::CODEC_ID,
                 E::SCHEMA_HASH,
@@ -51,6 +67,9 @@ impl BatchEncoder {
         self.body.clear();
 
         for record in records {
+            if !keep(record) {
+                continue;
+            }
             first_ts = first_ts.min(record.ts_ns);
             last_ts = last_ts.max(record.ts_ns);
             let local = record.kind.saturating_sub(E::BASE);
@@ -74,7 +93,7 @@ impl BatchEncoder {
 
         self.payload.clear();
         self.payload
-            .extend_from_slice(&(records.len() as u32).to_le_bytes());
+            .extend_from_slice(&(retained as u32).to_le_bytes());
         self.payload.extend_from_slice(&first_ts.to_le_bytes());
         self.payload.extend_from_slice(&last_ts.to_le_bytes());
         self.payload
@@ -91,7 +110,7 @@ impl BatchEncoder {
             E::CODEC_ID,
             E::SCHEMA_HASH,
             E::KINDS,
-            records.len() as u32,
+            retained as u32,
             first_ts,
             last_ts,
             domain.to_vec().into_boxed_slice(),
@@ -189,6 +208,23 @@ mod tests {
         assert_eq!(batch.payload[22], 0b11);
         assert_eq!(&batch.payload[23..25], &4u16.to_le_bytes());
         assert_eq!(&batch.payload[25..29], b"dc=1");
+    }
+
+    #[test]
+    fn encode_where_drops_records_before_the_payload() {
+        let mut encoder = BatchEncoder::new();
+        let records = [
+            Record::new(Level::Info, 0, 0, 1, 1, 7, TestEvent::Number(1)),
+            Record::new(Level::Error, 0, 0, 2, 2, 7, TestEvent::Number(2)),
+        ];
+        let batch = encoder.encode_where(&records, b"", |record| record.level >= Level::Error);
+        assert_eq!(batch.record_count, 1);
+        assert_eq!(batch.first_ts_ns, 2);
+        assert_eq!(batch.last_ts_ns, 2);
+
+        let none = encoder.encode_where(&records, b"", |_| false);
+        assert!(none.is_empty());
+        assert!(none.payload.is_empty());
     }
 
     #[test]

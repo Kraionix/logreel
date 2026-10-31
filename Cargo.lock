@@ -88,7 +88,7 @@ checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
 
 [[package]]
 name = "logreel"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel-core",
  "logreel-derive",
@@ -98,7 +98,7 @@ dependencies = [
 
 [[package]]
 name = "logreel-alloc-check"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel-core",
  "logreel-store",
@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "logreel-bench"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel",
  "logreel-example-events",
@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "logreel-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel-store",
  "tokio",
@@ -123,7 +123,7 @@ dependencies = [
 
 [[package]]
 name = "logreel-derive"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -132,7 +132,7 @@ dependencies = [
 
 [[package]]
 name = "logreel-example-events"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel",
  "prost",
@@ -140,7 +140,7 @@ dependencies = [
 
 [[package]]
 name = "logreel-file"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel-store",
  "serde_json",
@@ -149,18 +149,18 @@ dependencies = [
 
 [[package]]
 name = "logreel-quickstart"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel",
 ]
 
 [[package]]
 name = "logreel-store"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "logreel-store-redb"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "logreel-store",
  "redb",
@@ -327,7 +327,7 @@ checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "zstd",

@@ -15,7 +15,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.98"
 license = "MIT"
@@ -23,13 +23,13 @@ repository = "https://github.com/Kraionix/logreel"
 authors = ["logreel contributors"]
 
 [workspace.dependencies]
-logreel-core = { path = "crates/logreel-core", version = "=0.1.0" }
-logreel-derive = { path = "crates/logreel-derive", version = "=0.1.0" }
-logreel-store = { path = "crates/logreel-store", version = "=0.1.0" }
-logreel-file = { path = "crates/logreel-file", version = "=0.1.0" }
-logreel-store-redb = { path = "crates/logreel-store-redb", version = "=0.1.0" }
-logreel = { path = "crates/logreel", version = "=0.1.0" }
-logreel-example-events = { path = "examples/events", version = "=0.1.0" }
+logreel-core = { path = "crates/logreel-core", version = "=0.2.0" }
+logreel-derive = { path = "crates/logreel-derive", version = "=0.2.0" }
+logreel-store = { path = "crates/logreel-store", version = "=0.2.0" }
+logreel-file = { path = "crates/logreel-file", version = "=0.2.0" }
+logreel-store-redb = { path = "crates/logreel-store-redb", version = "=0.2.0" }
+logreel = { path = "crates/logreel", version = "=0.2.0" }
+logreel-example-events = { path = "examples/events", version = "=0.2.0" }
 
 tokio = { version = "1.53", default-features = false, features = ["rt"] }
 prost = "0.14.4"

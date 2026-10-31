@@ -168,3 +168,88 @@ fn multiple_days_are_scanned_in_order() {
     assert_eq!(batches[0].first_ts_ns, 1);
     assert_eq!(batches[1].first_ts_ns, 2);
 }
+
+#[test]
+fn an_uncompressed_file_refuses_compressed_frames() {
+    let dir = TempDir::new("compress-mismatch");
+    let clock: Arc<dyn logreel_file::Clock> = Arc::new(ManualClock::at(2026, 10, 31));
+    {
+        let config = logreel_file::FileStoreConfig {
+            directory: dir.path().to_path_buf(),
+            producer_id: 1,
+            session_nonce: 0,
+            keep_days: 7,
+            max_total_bytes: 0,
+            compress: false,
+            zstd_level: 3,
+        };
+        let mut store = logreel_file::FileStore::with_clock(config, Arc::clone(&clock))
+            .expect("open plain store");
+        store.append(&sample_batch(1_000)).expect("append");
+        store.sync(Durability::Immediate).expect("sync");
+    }
+
+    let config = logreel_file::FileStoreConfig {
+        directory: dir.path().to_path_buf(),
+        producer_id: 1,
+        session_nonce: 0,
+        keep_days: 7,
+        max_total_bytes: 0,
+        compress: true,
+        zstd_level: 1,
+    };
+    let mut store =
+        logreel_file::FileStore::with_clock(config, clock).expect("open compressed store");
+    // The header is written by the first append, so that is where the mismatch
+    // surfaces: a file whose header says "not compressed" must not start
+    // receiving frames the reader has no reason to expect.
+    let error = store
+        .append(&sample_batch(2_000))
+        .expect_err("the existing file cannot take compressed frames");
+    assert_eq!(error.kind(), logreel_store::ErrorKind::Refused);
+}
+
+#[test]
+fn an_out_of_range_zstd_level_is_refused_at_open() {
+    let dir = TempDir::new("zstd-level");
+    let config = logreel_file::FileStoreConfig {
+        directory: dir.path().to_path_buf(),
+        producer_id: 1,
+        session_nonce: 0,
+        keep_days: 7,
+        max_total_bytes: 0,
+        compress: false,
+        zstd_level: 0,
+    };
+    let error = logreel_file::FileStore::open(config).expect_err("level 0 is refused");
+    assert_eq!(error.kind(), logreel_store::ErrorKind::Refused);
+}
+
+#[cfg(feature = "zstd")]
+#[test]
+fn the_compression_level_is_taken_from_the_config() {
+    let dir = TempDir::new("zstd-roundtrip");
+    let clock = Arc::new(ManualClock::at(2026, 10, 31));
+    let config = logreel_file::FileStoreConfig {
+        directory: dir.path().to_path_buf(),
+        producer_id: 1,
+        session_nonce: 0,
+        keep_days: 7,
+        max_total_bytes: 0,
+        compress: true,
+        zstd_level: 1,
+    };
+    let mut store = logreel_file::FileStore::with_clock(config, clock).expect("open");
+    store.append(&sample_batch(1_000)).expect("append");
+    store.sync(Durability::Immediate).expect("sync");
+    drop(store);
+
+    let files = segments(dir.path()).expect("segments");
+    assert_eq!(files.len(), 1);
+    let value = probe(&files[0]).expect("probe");
+    assert_eq!(value.frames, 1);
+    assert_eq!(value.records, 2);
+    let records = collect_records(&files[0]);
+    assert_eq!(records.len(), 2);
+    assert_eq!(records[0].5, b"opened");
+}

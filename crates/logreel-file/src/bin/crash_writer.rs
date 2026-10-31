@@ -54,6 +54,7 @@ fn main() {
         keep_days: 7,
         max_total_bytes: 0,
         compress: false,
+        zstd_level: 3,
     })
     .expect("open");
     let batch = batch();
