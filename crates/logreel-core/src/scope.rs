@@ -110,21 +110,12 @@ mod tests {
         }
     }
 
-    fn render(value: &Ping, out: &mut String) {
-        out.push_str("ping");
-        let _ = value;
-    }
-
     #[test]
     fn scope_carries_handle_and_connection() {
         let sink = SharedSink::new();
         let batches = sink.batches();
-        let logger = init::<Ping>(
-            Settings::builder().batch_max(1).build(),
-            Some(render),
-            Box::new(sink),
-        )
-        .expect("init");
+        let logger =
+            init::<Ping>(Settings::builder().batch_max(1).build(), Box::new(sink)).expect("init");
         let handle = Arc::clone(logger.handle());
         let runtime = tokio::runtime::Builder::new_current_thread()
             .build()
@@ -140,12 +131,8 @@ mod tests {
     #[test]
     fn with_current_borrows_without_cloning() {
         let sink = SharedSink::new();
-        let logger = init::<Ping>(
-            Settings::builder().batch_max(1).build(),
-            Some(render),
-            Box::new(sink),
-        )
-        .expect("init");
+        let logger =
+            init::<Ping>(Settings::builder().batch_max(1).build(), Box::new(sink)).expect("init");
         let probe = Arc::clone(logger.handle());
         let runtime = tokio::runtime::Builder::new_current_thread()
             .build()
@@ -165,12 +152,8 @@ mod tests {
     #[test]
     fn nested_scope_wins() {
         let sink = SharedSink::new();
-        let logger = init::<Ping>(
-            Settings::builder().batch_max(1).build(),
-            Some(render),
-            Box::new(sink),
-        )
-        .expect("init");
+        let logger =
+            init::<Ping>(Settings::builder().batch_max(1).build(), Box::new(sink)).expect("init");
         let handle = Arc::clone(logger.handle());
         let runtime = tokio::runtime::Builder::new_current_thread()
             .build()

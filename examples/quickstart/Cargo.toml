@@ -9,13 +9,11 @@ repository.workspace = true
 publish = false
 
 [features]
-default = ["text", "file"]
-text = ["logreel/text"]
+default = ["file"]
 file = ["logreel/file"]
-ring = ["logreel/ring"]
 redb = ["logreel/redb"]
 zstd = ["logreel/zstd"]
-full = ["text", "file", "ring", "redb", "zstd"]
+full = ["file", "redb", "zstd"]
 
 [dependencies]
 logreel.workspace = true

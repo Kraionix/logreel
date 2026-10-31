@@ -8,8 +8,6 @@ use std::error::Error;
 
 #[cfg(not(feature = "file"))]
 use logreel::SharedSink;
-#[cfg(feature = "text")]
-use logreel::TextTarget;
 #[cfg(feature = "file")]
 use logreel::file::{FileStore, FileStoreConfig, probe, segments};
 use logreel::{DecodeError, Event, Level, Settings, init};
@@ -45,16 +43,6 @@ impl Event for Ping {
     }
 }
 
-#[cfg(feature = "file")]
-fn render(event: &Ping, out: &mut String) {
-    if cfg!(feature = "text") {
-        out.push_str(&format!(
-            "ping conn={} bytes={}",
-            event.conn_id, event.bytes
-        ));
-    }
-}
-
 fn emit_three(handle: &logreel::Handle<Ping>) {
     for conn_id in 1..=3 {
         handle.emit(
@@ -74,18 +62,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let directory = std::env::args()
         .nth(1)
         .unwrap_or_else(|| "./logs".to_owned());
-    let builder = Settings::builder()
+    let settings = Settings::builder()
         .min_level(Level::Info)
-        .domain(b"dc=1".to_vec());
-    #[cfg(feature = "text")]
-    let builder = builder.text(Level::Info, TextTarget::Stderr);
-    let settings = builder.build();
+        .domain(b"dc=1".to_vec())
+        .build();
     let config = FileStoreConfig {
         directory: directory.clone().into(),
         producer_id: 1,
         ..FileStoreConfig::new(&directory)
     };
-    let logger = init::<Ping>(settings, Some(render), Box::new(FileStore::open(config)?))?;
+    let logger = init::<Ping>(settings, Box::new(FileStore::open(config)?))?;
     emit_three(logger.handle());
     let report = logger.shutdown();
     println!(
@@ -109,7 +95,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 #[cfg(not(feature = "file"))]
 fn main() -> Result<(), Box<dyn Error>> {
     let settings = Settings::builder().min_level(Level::Info).build();
-    let logger = init::<Ping>(settings, None, Box::new(SharedSink::new()))?;
+    let logger = init::<Ping>(settings, Box::new(SharedSink::new()))?;
     emit_three(logger.handle());
     let report = logger.shutdown();
     println!(

@@ -9,7 +9,7 @@ repository.workspace = true
 publish = false
 
 [dependencies]
-logreel = { workspace = true, features = ["text", "ring", "file"] }
+logreel = { workspace = true, features = ["file"] }
 logreel-example-events.workspace = true
 tokio = { workspace = true, features = ["rt-multi-thread", "time"] }
 

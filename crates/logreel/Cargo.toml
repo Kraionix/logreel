@@ -9,8 +9,6 @@ repository.workspace = true
 
 [features]
 default = []
-text = ["logreel-core/text"]
-ring = ["logreel-core/ring"]
 file = ["dep:logreel-file"]
 redb = ["dep:logreel-store-redb"]
 zstd = ["file", "logreel-file/zstd"]

@@ -81,7 +81,6 @@ fn emit_path_does_not_allocate_after_warm_up() {
             .flush_interval(Duration::from_secs(60))
             .flush_on_warn(false)
             .build(),
-        None,
         Box::new(SharedSink::new()),
     )
     .expect("init");
@@ -115,7 +114,6 @@ fn disabled_emit_does_not_allocate() {
             .min_level(Level::Error)
             .channel_capacity(8)
             .build(),
-        None,
         Box::new(SharedSink::new()),
     )
     .expect("init");

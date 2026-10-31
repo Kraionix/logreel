@@ -15,8 +15,8 @@ use std::time::{Duration, Instant};
 
 use logreel::file::{FileStore, FileStoreConfig, SegmentReader, probe, segments};
 use logreel::{
-    BatchEncoder, BatchSink, Durability, EncodedBatch, Level, Record, Render, Settings, SharedSink,
-    Store, StoreError, format_utc, init, now_ns, scope,
+    BatchEncoder, BatchSink, Durability, EncodedBatch, Level, Record, Settings, SharedSink, Store,
+    StoreError, format_utc, init, now_ns, scope,
 };
 use logreel_example_events::{DomainEvent, SessionClosed};
 
@@ -97,10 +97,6 @@ fn event(index: u64) -> DomainEvent {
     })
 }
 
-fn render_event(event: &DomainEvent, out: &mut String) {
-    event.render(out);
-}
-
 fn measure_all() -> Vec<Metric> {
     let mut metrics = Vec::new();
     metrics.push(measure_emit_gated());
@@ -140,7 +136,6 @@ fn measure_emit_gated() -> Metric {
             .min_level(Level::Error)
             .channel_capacity(1024)
             .build(),
-        Some(render_event),
         Box::new(SharedSink::new()),
     )
     .expect("init");
@@ -186,7 +181,6 @@ fn measure_emit_enabled() -> Metric {
             .batch_max(4096)
             .flush_interval(Duration::from_secs(60))
             .build(),
-        Some(render_event),
         Box::new(CountingSink {
             records: Arc::clone(&records),
         }),
@@ -403,7 +397,6 @@ fn measure_rss() -> Metric {
             .min_level(Level::Trace)
             .batch_max(4096)
             .build(),
-        Some(render_event),
         Box::new(SharedSink::new()),
     )
     .expect("init");
@@ -503,7 +496,7 @@ fn render_table(results: &[Metric]) -> String {
     out.push_str(&format!("- cpu: {}\n", cpu_model()));
     out.push_str(&format!("- toolchain: {}\n", rustc_version()));
     out.push_str("- profile: release, median of 5, same machine\n");
-    out.push_str("- feature set: text, ring, file, zstd-capable reader\n\n");
+    out.push_str("- feature set: file, zstd-capable reader\n\n");
     out.push_str("| metric | value | unit | note |\n|---|---:|---|---|\n");
     for metric in results {
         out.push_str(&format!(

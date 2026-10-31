@@ -45,7 +45,7 @@ impl Event for Ping {
 fn main() -> Result<(), Box<dyn Error>> {
     let settings = Settings::builder().min_level(Level::Info).build();
     let store = FileStore::open(FileStoreConfig::new("./logs"))?;
-    let logger = init::<Ping>(settings, None, Box::new(store))?;
+    let logger = init::<Ping>(settings, Box::new(store))?;
     logger.handle().emit(Level::Info, 0, 42, Ping(1024));
     let report = logger.shutdown();
     println!("wrote {} records", report.records);
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 ```
 
 Enable the backend with `logreel = { version = "0.1", features = ["file"] }`.
-The full working example, including text projection and probing, is in
+The full working example, including probing, is in
 [`examples/quickstart`](examples/quickstart).
 
 The byte layout is specified in [`docs/SPEC.md`](docs/SPEC.md); a reader in
@@ -73,14 +73,14 @@ another language can follow [`docs/FORMAT.md`](docs/FORMAT.md).
 
 | feature | default | effect |
 |---|---|---|
-| `text` | off | text projection on stderr/stdout |
-| `ring` | off | in-memory ring for post-mortem dumps |
 | `file` | off | append-only segment backend |
 | `zstd` | off | per-frame compression (implies `file`) |
 | `redb` | off | alternative redb backend |
 
-Text is off by default so a published dependency does not pull a formatting
-stack into a binary that only needs records.
+No feature is on by default, so a published dependency that only needs
+records does not pull a storage stack into the binary. Rendering a record as a
+line and keeping one for a dump belong to the application's
+[`Observer`](crates/logreel-core/src/observer.rs).
 
 ## Measurements
 

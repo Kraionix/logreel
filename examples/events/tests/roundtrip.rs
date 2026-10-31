@@ -1,6 +1,6 @@
 //! Roundtrip and byte-identity tests for the example domain.
 
-use logreel::{BatchEncoder, Event, Level, Record, Render};
+use logreel::{BatchEncoder, Event, Level, Record};
 use logreel_example_events::{
     BytesOut, DomainEvent, Handshake, SessionClosed, SessionOpened, Tick,
 };

@@ -3,9 +3,8 @@
 //! One import for applications: the event contract and pipeline from
 //! logreel-core, the derive macro, and the optional segment file backend.
 //!
-//! The default feature set is empty. Enable text, ring, file, zstd or redb
-//! explicitly; a dependency that only needs records does not link a
-//! formatting or storage stack.
+//! The default feature set is empty. Enable file, zstd or redb explicitly; a
+//! dependency that only needs records does not link a storage stack.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]

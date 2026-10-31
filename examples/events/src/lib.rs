@@ -3,7 +3,7 @@
 //! The derived structs implement the logreel Event contract; the enum is the
 //! single event type of the process and delegates kind, encode and decode.
 
-use logreel::{Event, Render};
+use logreel::Event;
 use prost::Message;
 
 /// A connection was accepted.
@@ -110,8 +110,9 @@ pub enum DomainEvent {
     Tick(Tick),
 }
 
-impl Render for DomainEvent {
-    fn render(&self, out: &mut String) {
+impl DomainEvent {
+    /// Text form of the event, for tests and benchmarks.
+    pub fn render(&self, out: &mut String) {
         use std::fmt::Write as _;
         match self {
             Self::SessionOpened(event) => {
