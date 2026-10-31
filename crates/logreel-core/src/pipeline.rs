@@ -309,7 +309,10 @@ pub fn init_with<E: Event + Send + 'static>(
         tx,
         filters,
         dropped: Arc::clone(&dropped),
-        seq: AtomicU32::new(0),
+        // One, not zero: zero is the unused-looking value a reader can treat as
+        // "no sequence yet", and it keeps the first record's number stable
+        // across the version that assigned it from outside.
+        seq: AtomicU32::new(1),
         ring: ring.clone(),
     });
     let join = thread::Builder::new()
@@ -948,9 +951,9 @@ mod tests {
     fn sequence_counter_is_shared() {
         let probe = std::sync::Arc::new(Probe::default());
         let (logger, _) = probe_logger(settings(), probe);
-        assert_eq!(logger.handle().sequence(), 0);
-        logger.handle().emit(Level::Info, 0, 0, TestEvent::Note(1));
         assert_eq!(logger.handle().sequence(), 1);
+        logger.handle().emit(Level::Info, 0, 0, TestEvent::Note(1));
+        assert_eq!(logger.handle().sequence(), 2);
         let _ = logger.shutdown();
     }
 }
