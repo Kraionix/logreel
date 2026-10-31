@@ -38,7 +38,7 @@ pub use pipeline::{Handle, InitError, Logger, ShutdownReport, init, init_with};
 pub use record::Record;
 pub use render::Render;
 pub use ring::RingSettings;
-pub use scope::{current, scope, try_emit};
+pub use scope::{current, scope, try_emit, with_current};
 pub use settings::{
     InternalError, InternalErrorKind, Settings, SettingsBuilder, TextSettings, TextTarget,
 };
