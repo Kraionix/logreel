@@ -350,7 +350,7 @@ fn read_segments(directory: &Path) -> Result<Vec<(PathBuf, i64, u64)>, StoreErro
 }
 
 fn recover(path: &Path, expected: &Header) -> Result<u64, StoreError> {
-    let mut reader = FrameReader::open(path, false)?;
+    let mut reader = FrameReader::open(path)?;
     if reader.header().codec_id != expected.codec_id
         || reader.header().schema_hash != expected.schema_hash
     {

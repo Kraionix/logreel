@@ -55,11 +55,10 @@ pub(crate) struct FrameReader {
     raw: Vec<u8>,
     #[allow(dead_code)]
     decompressed: Vec<u8>,
-    hasher: Option<Sha256>,
 }
 
 impl FrameReader {
-    pub(crate) fn open(path: &Path, hash: bool) -> Result<Self, StoreError> {
+    pub(crate) fn open(path: &Path) -> Result<Self, StoreError> {
         let mut file = File::open(path).map_err(|error| with_path(StoreError::io(error), path))?;
         let len = file
             .metadata()
@@ -69,10 +68,6 @@ impl FrameReader {
         let read = read_up_to(&mut file, &mut header_bytes)?;
         let header =
             Header::parse(&header_bytes[..read]).map_err(|error| with_path(error, path))?;
-        let mut hasher = hash.then(Sha256::new);
-        if let Some(hasher) = &mut hasher {
-            hasher.update(&header_bytes[..HEADER_LEN]);
-        }
         Ok(Self {
             file,
             path: path.to_path_buf(),
@@ -81,7 +76,6 @@ impl FrameReader {
             len,
             raw: Vec::new(),
             decompressed: Vec::new(),
-            hasher,
         })
     }
 
@@ -185,19 +179,11 @@ impl FrameReader {
         }
         out.clear();
         out.extend_from_slice(payload);
-        if let Some(hasher) = &mut self.hasher {
-            hasher.update(&head);
-            hasher.update(&self.raw);
-        }
         self.offset = start + 8 + stored as u64;
         Some(Ok(FrameMeta {
             offset: start,
             stored_len: stored as u32,
         }))
-    }
-
-    fn finish_hash(&mut self) -> Option<[u8; 32]> {
-        self.hasher.take().map(Sha256::finish)
     }
 }
 
@@ -210,7 +196,7 @@ impl SegmentReader {
     /// Open a segment and validate its header.
     pub fn open(path: &Path) -> Result<Self, StoreError> {
         Ok(Self {
-            reader: FrameReader::open(path, false)?,
+            reader: FrameReader::open(path)?,
         })
     }
 
@@ -459,9 +445,24 @@ fn hex(bytes: &[u8]) -> String {
     out
 }
 
+fn hash_prefix(path: &Path, valid_end: u64) -> Result<[u8; 32], StoreError> {
+    let file = File::open(path).map_err(|error| with_path(StoreError::io(error), path))?;
+    let mut file = file.take(valid_end);
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer).map_err(StoreError::io)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(hasher.finish())
+}
+
 /// Probe a segment without any codec.
 pub fn probe(path: &Path) -> Result<Probe, StoreError> {
-    let mut reader = FrameReader::open(path, true)?;
+    let mut reader = FrameReader::open(path)?;
     let header = reader.header().clone();
     let mut buffer = Vec::new();
     let mut frames = 0u64;
@@ -534,7 +535,7 @@ pub fn probe(path: &Path) -> Result<Probe, StoreError> {
     }
 
     let len = reader.len();
-    let sha256 = reader.finish_hash().unwrap_or([0u8; 32]);
+    let sha256 = hash_prefix(path, valid_end)?;
     Ok(Probe {
         path: path.to_path_buf(),
         header,
