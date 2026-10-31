@@ -30,5 +30,6 @@ pub use reader::{
     DecodedBatch, OwnedRecord, Probe, Scan, SegmentReader, TailState, decode_batch, dump_raw, probe,
 };
 pub use store::{Clock, FileStore, FileStoreConfig, SystemClock, segments};
+pub use time::{SEGMENT_SUFFIX, day_name, day_of_name, segment_day, today};
 
 pub use logreel_store;

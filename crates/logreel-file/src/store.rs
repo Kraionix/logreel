@@ -11,7 +11,7 @@ use logreel_store::{BatchScan, Durability, EncodedBatch, ErrorKind, Store, Store
 use crate::crc32c::crc32c;
 use crate::header::{Header, MAX_PAYLOAD};
 use crate::reader::{FrameReader, SegmentReader};
-use crate::time::{day_from_ns, day_name};
+use crate::time::{SEGMENT_SUFFIX, day_from_ns, day_name, day_of_name, segment_day};
 
 /// Time source for rotation and header creation.
 pub trait Clock: Send + Sync {
@@ -222,7 +222,10 @@ impl FileStore {
         }
         self.sync(Durability::Immediate)?;
         self.active = None;
-        let path = self.config.directory.join(format!("{}.seg", day_name(day)));
+        let path = self
+            .config
+            .directory
+            .join(format!("{}{SEGMENT_SUFFIX}", day_name(day)));
         let lock = acquire_lock(&path)?;
         let file = self.open_segment(&path, batch)?;
         self.active = Some(Active {
@@ -384,13 +387,10 @@ fn read_segments(directory: &Path) -> Result<Vec<(PathBuf, i64, u64)>, StoreErro
     for entry in fs::read_dir(directory).map_err(StoreError::io)? {
         let entry = entry.map_err(StoreError::io)?;
         let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("seg") {
-            continue;
-        }
-        let Some(stem) = path.file_stem().and_then(|value| value.to_str()) else {
+        let Some(name) = path.file_name().and_then(|value| value.to_str()) else {
             continue;
         };
-        let Some(day) = crate::time::day_from_name(stem) else {
+        let Some(day) = segment_day(name).and_then(day_of_name) else {
             continue;
         };
         let len = entry.metadata().map_err(StoreError::io)?.len();
