@@ -13,6 +13,7 @@ text = []
 ring = []
 
 [dependencies]
+logreel-store.workspace = true
 tokio = { workspace = true }
 
 [lints]

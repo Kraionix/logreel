@@ -97,6 +97,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "logreel-alloc-check"
+version = "0.1.0"
+dependencies = [
+ "logreel-core",
+ "logreel-store",
+]
+
+[[package]]
 name = "logreel-bench"
 version = "0.1.0"
 dependencies = [
@@ -107,6 +115,7 @@ dependencies = [
 name = "logreel-core"
 version = "0.1.0"
 dependencies = [
+ "logreel-store",
  "tokio",
 ]
 

@@ -11,6 +11,7 @@ members = [
     "bench/harness",
     "examples/events",
     "examples/quickstart",
+    "tests/alloc-harness",
 ]
 
 [workspace.package]
@@ -47,7 +48,9 @@ rust_2018_idioms = { level = "warn", priority = -1 }
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
+# Pedantic is intentionally not enabled: the workspace favours a small,
+# actionable lint set over style churn.
+
 doc_markdown = "allow"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
