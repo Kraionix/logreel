@@ -371,31 +371,6 @@ impl<E: Event> Writer<E> {
             return;
         }
 
-        for record in &self.batch {
-            if let Some(observer) = self.observer.as_mut() {
-                observer.record(record);
-            }
-            let text_wants = self
-                .text
-                .as_ref()
-                .is_some_and(|text| text.wants(record.level));
-            let ring_wants = self.ring.is_some();
-            if !text_wants && !ring_wants {
-                continue;
-            }
-            if let Some(render) = self.render {
-                format_record(record, render, &mut self.line);
-                if text_wants && let Some(text) = self.text.as_mut() {
-                    text.push(&self.line);
-                }
-                if ring_wants && let Some(ring) = &self.ring {
-                    ring.lock()
-                        .expect("ring lock")
-                        .push(record.level, &self.line);
-                }
-            }
-        }
-
         let filters = Arc::clone(&self.sink_filters);
         let mut has_warn = false;
         for record in &self.batch {
@@ -444,6 +419,39 @@ impl<E: Event> Writer<E> {
         self.batch.clear();
     }
 
+    /// Take one record: every consumer that runs per record, then the batch.
+    ///
+    /// This is where the observer and the built-in text projection see a
+    /// record, which is on arrival and not at flush: a line that waits for the
+    /// next batch is a line a crash can still lose, and the text log exists to
+    /// be read while the process that wrote it is alive.
+    fn push(&mut self, record: Record<E>) {
+        if let Some(observer) = self.observer.as_mut() {
+            observer.record(&record);
+        }
+
+        let text_wants = self
+            .text
+            .as_ref()
+            .is_some_and(|text| text.wants(record.level));
+        let ring_wants = self.ring.is_some();
+        if (text_wants || ring_wants)
+            && let Some(render) = self.render
+        {
+            format_record(&record, render, &mut self.line);
+            if text_wants && let Some(text) = self.text.as_mut() {
+                text.push(&self.line);
+            }
+            if ring_wants && let Some(ring) = &self.ring {
+                ring.lock()
+                    .expect("ring lock")
+                    .push(record.level, &self.line);
+            }
+        }
+
+        self.batch.push(record);
+    }
+
     /// Turn the shared drop counter into the observer's overflow record.
     ///
     /// Called at the top of a flush, so a storm reports once per batch rather
@@ -462,7 +470,7 @@ impl<E: Event> Writer<E> {
             return;
         };
         if let Some(record) = observer.overflow(dropped, window.as_nanos() as u64) {
-            self.batch.push(record);
+            self.push(record);
         }
     }
 
@@ -499,7 +507,7 @@ impl<E: Event> Writer<E> {
 
     fn absorb(&mut self, msg: Msg<E>) {
         match msg {
-            Msg::Record(record) => self.batch.push(record),
+            Msg::Record(record) => self.push(record),
             // A flush or dump queued behind the stop is already satisfied by
             // the flush the caller is about to perform.
             Msg::Flush | Msg::Dump => {}
@@ -564,7 +572,7 @@ fn writer_loop<E: Event>(
         match rx.recv_timeout(writer.settings.flush_interval) {
             Ok(Msg::Record(record)) => {
                 let warn = record.level >= Level::Warn;
-                writer.batch.push(record);
+                writer.push(record);
                 if writer.batch.len() >= writer.settings.batch_max
                     || (writer.settings.flush_on_warn && warn)
                 {
