@@ -3,7 +3,6 @@ use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender, TrySendError, sync_channel};
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::time::Instant;
 
 use logreel_store::{BatchSink, Durability};
 
@@ -397,7 +396,6 @@ fn writer_loop<E: Event>(
         line: String::with_capacity(256),
         result: WriterResult::default(),
     };
-    let _ = Instant::now();
 
     loop {
         match rx.recv_timeout(writer.settings.flush_interval) {
