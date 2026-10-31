@@ -35,6 +35,7 @@ impl BatchEncoder {
             return EncodedBatch::new(
                 E::CODEC_ID,
                 E::SCHEMA_HASH,
+                E::KINDS,
                 0,
                 0,
                 0,
@@ -89,6 +90,7 @@ impl BatchEncoder {
         EncodedBatch::new(
             E::CODEC_ID,
             E::SCHEMA_HASH,
+            E::KINDS,
             records.len() as u32,
             first_ts,
             last_ts,

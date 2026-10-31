@@ -15,5 +15,12 @@ zstd = ["dep:zstd"]
 logreel-store.workspace = true
 zstd = { workspace = true, optional = true }
 
+[[bin]]
+name = "crash-writer"
+path = "src/bin/crash_writer.rs"
+
+[dev-dependencies]
+serde_json.workspace = true
+
 [lints]
 workspace = true

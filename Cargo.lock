@@ -141,6 +141,7 @@ name = "logreel-file"
 version = "0.1.0"
 dependencies = [
  "logreel-store",
+ "serde_json",
  "zstd",
 ]
 

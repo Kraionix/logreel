@@ -39,6 +39,8 @@ pub struct EncodedBatch {
     pub codec_id: u16,
     /// Fingerprint of the producing event schema.
     pub schema_hash: [u8; 16],
+    /// Number of kinds in the producing domain.
+    pub kind_count: u16,
     /// Number of records in the batch.
     pub record_count: u32,
     /// Smallest record timestamp in the batch.
@@ -54,9 +56,11 @@ pub struct EncodedBatch {
 impl EncodedBatch {
     /// Build a batch from its wire payload.
     #[must_use]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         codec_id: u16,
         schema_hash: [u8; 16],
+        kind_count: u16,
         record_count: u32,
         first_ts_ns: u64,
         last_ts_ns: u64,
@@ -66,6 +70,7 @@ impl EncodedBatch {
         Self {
             codec_id,
             schema_hash,
+            kind_count,
             record_count,
             first_ts_ns,
             last_ts_ns,
@@ -377,6 +382,7 @@ mod tests {
         EncodedBatch::new(
             1,
             [0x11; 16],
+            8,
             count,
             10,
             20,

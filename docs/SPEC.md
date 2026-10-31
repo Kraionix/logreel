@@ -221,8 +221,8 @@ reported as corruption.
 - number of records whose kind is `>= kind_count` (unknown count);
 - `valid_end`: byte offset just past the last valid frame;
 - `truncated_bytes`: file length minus `valid_end`;
-- `tail`: `clean`, `truncated` (EOF mid-frame) or `corrupt` (bad CRC, bad
-  length, bad batch);
+- `tail`: `clean`, `truncated` (EOF mid-frame), `corrupt` (bad CRC, bad
+  length, bad batch) or `unsupported` (a zstd frame without the feature);
 - `sha256` of bytes `0..valid_end`.
 
 A corrupt frame does not abort probing; it ends the valid prefix, and the tail
