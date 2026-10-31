@@ -1,0 +1,22 @@
+name: cross
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  armv7:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.98.0
+        with:
+          targets: armv7-unknown-linux-musleabihf
+      - name: build quickstart for armv7
+        run: |
+          cargo build -p logreel-quickstart --release \
+            --no-default-features --features text,file \
+            --target armv7-unknown-linux-musleabihf
+      - name: size
+        run: ls -l target/armv7-unknown-linux-musleabihf/release/logreel-quickstart

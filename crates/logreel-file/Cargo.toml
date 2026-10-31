@@ -1,0 +1,19 @@
+[package]
+name = "logreel-file"
+description = "Append-only segment files for logreel: rotation, retention, probe and streaming scan"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+zstd = ["dep:zstd"]
+
+[dependencies]
+logreel-store.workspace = true
+zstd = { workspace = true, optional = true }
+
+[lints]
+workspace = true

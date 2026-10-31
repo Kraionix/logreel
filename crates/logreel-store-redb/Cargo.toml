@@ -1,0 +1,15 @@
+[package]
+name = "logreel-store-redb"
+description = "redb-backed store for logreel"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+logreel-store.workspace = true
+redb.workspace = true
+
+[lints]
+workspace = true

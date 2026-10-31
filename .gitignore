@@ -1,0 +1,5 @@
+/target
+**/*.seg.tmp
+**/*.lock.tmp
+/fixtures/.tmp
+*.profraw
